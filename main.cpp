@@ -31,6 +31,7 @@ void onPacketReceive(RawPacket* pkt, PcapLiveDevice* dev, void* cookie) {
         if (prefix < 224 || (prefix > 239 && !is_broadcast)) {
             return;
         }
+        cout << "Paket wird gesendet" << endl;
 
         ipLayer->setSrcIpAddress(settings->vpn_device->getIPv4Address());
     } else {
