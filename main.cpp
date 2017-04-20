@@ -19,18 +19,26 @@ void onPacketReceive(RawPacket* pkt, PcapLiveDevice* dev, void* cookie) {
         return;
 
     IPv4Layer* ipLayer = packet.getLayerOfType<IPv4Layer>();
-    if(ipLayer != NULL) {
-        if (dev->getIPv4Address() != ipLayer->getSrcIpAddress()) {
+
+    if(ipLayer != NULL)
+    {
+        if (dev->getIPv4Address() != ipLayer->getSrcIpAddress())
+        {
             return;
         }
 
-        unsigned int prefix = ipLayer->getDstIpAddress().toInt();
-        bool is_broadcast = (prefix == UINT32_MAX);
-        prefix >>= 24;
+        std::string sDestinationAddress = ipLayer->getDstIpAddress().toString();
+        std::string sPrefix = sDestinationAddress.substr(0, sDestinationAddress.find('.'));
+        bool is_broadcast = (stoul(sDestinationAddress) == UINT32_MAX);
+        int prefix = stoul(sPrefix);
 
-        if (prefix < 224 || (prefix > 239 && !is_broadcast)) {
+        cout << prefix;
+
+        if (prefix < 224 || (prefix > 239 && !is_broadcast))
+        {
             return;
         }
+        cout << ipLayer->getDstIpAddress().toString();
         cout << "Paket wird gesendet" << endl;
 
         ipLayer->setSrcIpAddress(settings->vpn_device->getIPv4Address());
@@ -38,12 +46,18 @@ void onPacketReceive(RawPacket* pkt, PcapLiveDevice* dev, void* cookie) {
         return;
     }
 
+    IPv4Layer* hi = packet.getLayerOfType<IPv4Layer>();
+    cout << hi->getDstIpAddress().toString();
+
     if(!settings->vpn_device->sendPacket(*pkt)) {
         puts("Broadcast konnte nicht weitergeleitet werden.\n");
     }
 }
 
-int main() {
+
+
+int main()
+{
     vector<PcapLiveDevice*> device_list = (&pcpp::PcapLiveDeviceList::getInstance())->getPcapLiveDevicesList();
 
     if (device_list.size() < 2)
@@ -145,7 +159,7 @@ int main() {
 
     puts("Yay. Alle relevanten Pakete werden jetzt umgeleitet.");
     puts("Schreibe stop, um das Programm sauber zu beenden.");
-    main_device->startCapture(onPacketReceive, &data);
+    if(main_device->startCapture(onPacketReceive, &data)) cout << "Jaa";
 
     bool shouldStop = false;
 
