@@ -2,6 +2,7 @@
 #include <PcapLiveDevice.h>
 #include <PcapLiveDeviceList.h>
 #include <IPv4Layer.h>
+#include <multidirection.cpp>
 
 using namespace std;
 using namespace pcpp;
@@ -45,9 +46,6 @@ void onPacketReceive(RawPacket* pkt, PcapLiveDevice* dev, void* cookie) {
     } else {
         return;
     }
-
-    IPv4Layer* hi = packet.getLayerOfType<IPv4Layer>();
-    cout << hi->getDstIpAddress().toString();
 
     if(!settings->vpn_device->sendPacket(*pkt)) {
         puts("Broadcast konnte nicht weitergeleitet werden.\n");
@@ -139,10 +137,6 @@ int main()
         }
     }
 
-
-    VPNDeviceWrapper data;
-    data.vpn_device = vpn_device;
-
     puts("Oeffne Haupt-Device.");
     if (!main_device->open())
     {
@@ -159,7 +153,19 @@ int main()
 
     puts("Yay. Alle relevanten Pakete werden jetzt umgeleitet.");
     puts("Schreibe stop, um das Programm sauber zu beenden.");
-    if(main_device->startCapture(onPacketReceive, &data)) cout << "Jaa";
+
+    multidir::SettingsWrapper vpn_settings;
+    vpn_settings.mainDevice = main_device;
+    vpn_settings.vpnDevice  = vpn_device;
+    vpn_settings.mode       = multidir::INCOMING;
+
+    multidir::SettingsWrapper main_settings;
+    main_settings.mainDevice = main_device;
+    main_settings.vpnDevice  = vpn_device;
+    main_settings.mode       = multidir::OUTGOING;
+
+    main_device->startCapture(multidir::onPacketReceive, &main_settings);
+    vpn_device->startCapture(multidir::onPacketReceive, &vpn_settings);
 
     bool shouldStop = false;
 
